@@ -1,0 +1,125 @@
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#define MAX 100
+
+typedef struct Node {
+    char ch;
+    int freq;
+    struct Node *left, *right;
+} Node;
+
+Node *heap[MAX];
+int size = 0;
+
+Node *createNode(char ch, int freq) {
+    Node *node = malloc(sizeof(Node));
+    if (node == NULL) {
+        printf("Memory allocation failed.\n");
+        exit(1);
+    }
+
+    node->ch = ch;
+    node->freq = freq;
+    node->left = node->right = NULL;
+    return node;
+}
+
+void insert(Node *node) {
+    int i = size++;
+    while (i > 0 && heap[(i - 1) / 2]->freq > node->freq) {
+        heap[i] = heap[(i - 1) / 2];
+        i = (i - 1) / 2;
+    }
+    heap[i] = node;
+}
+
+Node *extractMin(void) {
+    Node *min = heap[0];
+    Node *last = heap[--size];
+
+    if (size > 0) {
+        int i = 0;
+        while (2 * i + 1 < size) {
+            int child = 2 * i + 1;
+            if (child + 1 < size &&
+                heap[child + 1]->freq < heap[child]->freq)
+                child++;
+
+            if (last->freq <= heap[child]->freq)
+                break;
+
+            heap[i] = heap[child];
+            i = child;
+        }
+        heap[i] = last;
+    }
+
+    return min;
+}
+
+void printCodes(Node *root, int code[], int top) {
+    if (root->left == NULL && root->right == NULL) {
+        printf("%c: ", root->ch);
+
+        if (top == 0)
+            printf("0");
+
+        for (int i = 0; i < top; i++)
+            printf("%d", code[i]);
+
+        printf("\n");
+        return;
+    }
+
+    if (root->left) {
+        code[top] = 0;
+        printCodes(root->left, code, top + 1);
+    }
+
+    if (root->right) {
+        code[top] = 1;
+        printCodes(root->right, code, top + 1);
+    }
+}
+
+int main(void) {
+    int n, freq[MAX], code[MAX];
+    char ch[MAX];
+
+    printf("Enter number of characters (1-100): ");
+    if (scanf("%d", &n) != 1 || n < 1 || n > MAX) {
+        printf("Invalid input.\n");
+        return 1;
+    }
+
+    printf("Enter each character and its frequency:\n");
+
+    for (int i = 0; i < n; i++) {
+        if (scanf(" %c %d", &ch[i], &freq[i]) != 2 ||
+            freq[i] <= 0) {
+            printf("Invalid character or frequency.\n");
+            return 1;
+        }
+
+        insert(createNode(ch[i], freq[i]));
+    }
+
+    while (size > 1) {
+        Node *left = extractMin();
+        Node *right = extractMin();
+
+        Node *parent = createNode('$',
+                                  left->freq + right->freq);
+        parent->left = left;
+        parent->right = right;
+
+        insert(parent);
+    }
+
+    printf("\nHuffman Codes:\n");
+    printCodes(heap[0], code, 0);
+
+    return 0;
+}
