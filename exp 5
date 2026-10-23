@@ -1,0 +1,171 @@
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#define MAX 100
+#define MAXE 4950
+#define INF 999999
+
+typedef struct {
+    int u, v, w;
+} Edge;
+
+int parent[MAX], rankSet[MAX];
+
+int find(int x) {
+    if (parent[x] != x)
+        parent[x] = find(parent[x]);
+    return parent[x];
+}
+
+int unite(int x, int y) {
+    x = find(x);
+    y = find(y);
+
+    if (x == y)
+        return 0;
+
+    if (rankSet[x] < rankSet[y])
+        parent[x] = y;
+    else if (rankSet[x] > rankSet[y])
+        parent[y] = x;
+    else {
+        parent[y] = x;
+        rankSet[x]++;
+    }
+    return 1;
+}
+
+int compare(const void *a, const void *b) {
+    const Edge *x = a, *y = b;
+    return (x->w > y->w) - (x->w < y->w);
+}
+
+// Prim's Algorithm
+void prim(int cost[MAX][MAX], int n) {
+    int visited[MAX] = {0};
+    int total = 0;
+
+    visited[0] = 1;
+    printf("\nPrim's MST:\n");
+
+    for (int e = 0; e < n - 1; e++) {
+        int min = INF, u = -1, v = -1;
+
+        for (int i = 0; i < n; i++) {
+            if (visited[i]) {
+                for (int j = 0; j < n; j++) {
+                    if (!visited[j] && cost[i][j] < min) {
+                        min = cost[i][j];
+                        u = i;
+                        v = j;
+                    }
+                }
+            }
+        }
+
+        if (u == -1) {
+            printf("Graph is disconnected; MST does not exist.\n");
+            return;
+        }
+
+        printf("%d - %d : %d\n", u, v, min);
+        total += min;
+        visited[v] = 1;
+    }
+
+    printf("Minimum cost = %d\n", total);
+}
+
+// Kruskal's Algorithm
+void kruskal(Edge edges[], int m, int n) {
+    qsort(edges, m, sizeof(Edge), compare);
+
+    for (int i = 0; i < n; i++) {
+        parent[i] = i;
+        rankSet[i] = 0;
+    }
+
+    int total = 0, count = 0;
+    printf("\nKruskal's MST:\n");
+
+    for (int i = 0; i < m && count < n - 1; i++) {
+        if (unite(edges[i].u, edges[i].v)) {
+            printf("%d - %d : %d\n",
+                   edges[i].u, edges[i].v, edges[i].w);
+            total += edges[i].w;
+            count++;
+        }
+    }
+
+    if (count != n - 1) {
+        printf("Graph is disconnected; MST does not exist.\n");
+        return;
+    }
+
+    printf("Minimum cost = %d\n", total);
+}
+
+int main(void) {
+    int cost[MAX][MAX];
+    Edge edges[MAXE];
+    int n, m = 0, choice;
+
+    printf("Enter number of vertices (max 100): ");
+    if (scanf("%d", &n) != 1 || n < 1 || n > MAX) {
+        printf("Invalid input.\n");
+        return 1;
+    }
+
+    printf("Enter adjacency matrix (0 = no edge):\n");
+
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (scanf("%d", &cost[i][j]) != 1) {
+                printf("Invalid input.\n");
+                return 1;
+            }
+            if (i != j && cost[i][j] == 0)
+                cost[i][j] = INF;
+        }
+    }
+
+    // Build edge list for Kruskal; use only upper triangle
+    for (int i = 0; i < n; i++) {
+        for (int j = i + 1; j < n; j++) {
+            if (cost[i][j] != INF) {
+                edges[m].u = i;
+                edges[m].v = j;
+                edges[m].w = cost[i][j];
+                m++;
+            }
+        }
+    }
+
+    printf("\n1. Prim's Algorithm");
+    printf("\n2. Kruskal's Algorithm");
+    printf("\n3. Both Algorithms");
+    printf("\nEnter choice: ");
+
+    if (scanf("%d", &choice) != 1) {
+        printf("Invalid choice.\n");
+        return 1;
+    }
+
+    switch (choice) {
+        case 1:
+            prim(cost, n);
+            break;
+        case 2:
+            kruskal(edges, m, n);
+            break;
+        case 3:
+            prim(cost, n);
+            kruskal(edges, m, n);
+            break;
+        default:
+            printf("Invalid choice.\n");
+    }
+
+    return 0;
+}
